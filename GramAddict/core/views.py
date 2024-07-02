@@ -920,6 +920,9 @@ class PostsViewList:
             )
             obj_count = n_photos + n_videos
             media_type = MediaType.CAROUSEL
+            if obj_count == 0:
+                media_type = MediaType.REEL
+                logger.info("Activating workaround test for Bug #285 - switching to REEL media type")
         return media_type, obj_count
 
     def _like_in_post_view(
