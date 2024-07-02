@@ -20,3 +20,4 @@ Pipfile.lock
 *.log*
 *.ini
 *.db
+server-restart.py

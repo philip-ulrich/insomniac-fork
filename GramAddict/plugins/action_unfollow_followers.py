@@ -294,6 +294,10 @@ class ActionUnfollowFollowers(Plugin):
         total_unfollows_limit_reached = False
         posts_end_detector.notify_new_page()
         prev_screen_iterated_followings = []
+        # variables to save appeared usernames
+        seen_users = set()
+        seen_user_threshold = 3 #how many people with the same usernames the bot should see again to stop
+        seen_user_count = 0
         while True:
             screen_iterated_followings = []
             logger.info("Iterate over visible followings.")
@@ -301,7 +305,8 @@ class ActionUnfollowFollowers(Plugin):
                 resourceIdMatches=self.ResourceID.USER_LIST_CONTAINER,
             )
             row_height, n_users = inspect_current_view(user_list)
-            for item in user_list:
+            for item in user_list: 
+                # inner user_list counter
                 cur_row_height = item.get_height()
                 if cur_row_height < row_height:
                     continue
@@ -316,6 +321,10 @@ class ActionUnfollowFollowers(Plugin):
 
                 username = user_name_view.get_text()
                 screen_iterated_followings.append(username)
+                # check if a username has seen previously
+                if username in seen_users:
+                    seen_user_count += 1
+                seen_users.add(username)
                 if username not in checked:
                     checked[username] = None
 
@@ -409,6 +418,13 @@ class ActionUnfollowFollowers(Plugin):
 
             if screen_iterated_followings != prev_screen_iterated_followings:
                 prev_screen_iterated_followings = screen_iterated_followings
+                # exit if reach seen threshold
+                if seen_user_count > seen_user_threshold:
+                    logger.info(
+                        "Reached the following list end, finish.",
+                        extra={"color": f"{Fore.GREEN}"},
+                    )
+                    return
                 logger.info("Need to scroll now.", extra={"color": f"{Fore.GREEN}"})
                 list_view = device.find(
                     resourceId=self.ResourceID.LIST,
