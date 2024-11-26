@@ -17,6 +17,7 @@ import requests
 import yaml
 import os
 import json
+import time
 from datetime import datetime
 from typing import Dict, Optional, List
 from GramAddict.core.plugin_loader import Plugin
@@ -84,9 +85,9 @@ class NocoDBStorage(Plugin):
         self.headers = {"xc-token": self.api_token}
         self.table_configs = self.config["tables"]
         
-        # Store table IDs
-        self.interacted_table_id = "mksqg86blzmibol"  # interacted_users
-        self.history_filters_table_id = "m8q5osbs3t6mhln"  # history_filters_users
+        # Store table IDs - these will be updated when tables are created/retrieved
+        self.interacted_table_id = None  # Will be set during table initialization
+        self.history_filters_table_id = None  # Will be set during table initialization
         
         self.logger = logging.getLogger(__name__)
         self.logger.info("NocoDBStorage plugin initialized with default configuration")
@@ -500,6 +501,10 @@ class NocoDBStorage(Plugin):
                     
                     if retries == 0:
                         raise TimeoutError(f"Timed out waiting for table {table_name} to be ready")
+            
+            # Set table IDs
+            self.interacted_table_id = self.tables['interaction_history']['id']
+            self.history_filters_table_id = self.tables['history_filters']['id']
             
             return True
             
