@@ -1,0 +1,56 @@
+api_token: M1prg3pL9C9GJP960dyzVvSws3oztsuimBpnTkYS
+base_id: pvazjom12m1ho5k
+base_url: http://192.168.50.114:8080
+table_schemas:
+  interacted_users:
+    table_name: interacted_users
+    title: Interacted Users
+    columns:
+      - column_name: User Id
+        title: User Id
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Username
+        title: Username
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Full Name
+        title: Full Name
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Profile URL
+        title: Profile URL
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Interaction Type
+        title: Interaction Type
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Success
+        title: Success
+        uidt: Checkbox
+        dt: boolean
+      - column_name: Timestamp
+        title: Timestamp
+        uidt: DateTime
+        dt: datetime
+  history_filters_users:
+    table_name: history_filters_users
+    title: History Filters Users
+    columns:
+      - column_name: User Id
+        title: User Id
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Username
+        title: Username
+        uidt: SingleLineText
+        dt: varchar
+      - column_name: Filtered At
+        title: Filtered At
+        uidt: DateTime
+        dt: datetime
+      - column_name: Filter Type
+        title: Filter Type
+        uidt: SingleLineText
+        dt: varchar
