@@ -13,6 +13,7 @@
 crashes
 accounts
 !config-examples/*
+!test_*.py
 Pipfile
 Pipfile.lock
 *.pdf
