@@ -1,0 +1,3 @@
+[console_scripts]
+uiautomator2 = uiautomator2.__main__:main
+

@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import Enum, auto
 from time import sleep
 from typing import Optional, Tuple
+import traceback
 
 import emoji
 import yaml
@@ -46,8 +47,6 @@ FIELD_SPECIFIC_ALPHABET = "specific_alphabet"
 FIELD_BIO_LANGUAGE = "biography_language"
 FIELD_BIO_BANNED_LANGUAGE = "biography_banned_language"
 FIELD_MIN_POSTS = "min_posts"
-FIELD_MIN_LIKERS = "min_likers"
-FIELD_MAX_LIKERS = "max_likers"
 FIELD_MUTUAL_FRIENDS = "mutual_friends"
 
 IGNORE_CHARSETS = ["MATHEMATICAL"]
@@ -202,7 +201,56 @@ class Filter:
 
     def return_check_profile(self, username, profile_data, skip_reason=None) -> bool:
         if self.storage is not None:
+            # Store in local storage
             self.storage.add_filter_user(username, profile_data, skip_reason)
+            
+            # Store in NocoDB if plugin is enabled
+            try:
+                if self.storage.nocodb and self.storage.nocodb.enabled:
+                    logger.info(f"Storing filter data in NocoDB for {username}")
+                    # Map skip reasons to filter types
+                    filter_type = "unknown"
+                    if skip_reason:
+                        if skip_reason in [SkipReason.YOU_FOLLOW, SkipReason.FOLLOW_YOU]:
+                            filter_type = "follow_filter"
+                        elif skip_reason in [SkipReason.IS_PRIVATE, SkipReason.IS_PUBLIC, SkipReason.UNKNOWN_PRIVACY]:
+                            filter_type = "privacy_filter"
+                        elif skip_reason in [SkipReason.LT_FOLLOWERS, SkipReason.GT_FOLLOWERS]:
+                            filter_type = "followers_filter"
+                        elif skip_reason in [SkipReason.LT_FOLLOWINGS, SkipReason.GT_FOLLOWINGS]:
+                            filter_type = "followings_filter"
+                        elif skip_reason == SkipReason.POTENCY_RATIO:
+                            filter_type = "ratio_filter"
+                        elif skip_reason in [SkipReason.HAS_BUSINESS, SkipReason.HAS_NON_BUSINESS]:
+                            filter_type = "business_filter"
+                        elif skip_reason == SkipReason.NOT_ENOUGH_POSTS:
+                            filter_type = "posts_filter"
+                        elif skip_reason in [SkipReason.BLACKLISTED_WORD, SkipReason.MISSING_MANDATORY_WORDS]:
+                            filter_type = "words_filter"
+                        elif skip_reason in [SkipReason.ALPHABET_NOT_MATCH, SkipReason.ALPHABET_NAME_NOT_MATCH]:
+                            filter_type = "alphabet_filter"
+                        elif skip_reason == SkipReason.BIOGRAPHY_LANGUAGE_NOT_MATCH:
+                            filter_type = "language_filter"
+                        elif skip_reason == SkipReason.NOT_LOADED:
+                            filter_type = "loading_filter"
+                        elif skip_reason == SkipReason.RESTRICTED:
+                            filter_type = "restricted_filter"
+                        elif skip_reason == SkipReason.HAS_LINK_IN_BIO:
+                            filter_type = "link_filter"
+                        elif skip_reason == SkipReason.LT_MUTUAL:
+                            filter_type = "mutual_filter"
+                        elif skip_reason == SkipReason.BIOGRAPHY_IS_EMPTY:
+                            filter_type = "biography_filter"
+
+                    self.storage.nocodb.store_filtered_user(
+                        username,
+                        filter_type,
+                        skip_reason.name if skip_reason else "NO_SKIP_REASON"
+                    )
+            except Exception as e:
+                logger.error(f"Error storing filter data in NocoDB: {str(e)}")
+                if logger.getEffectiveLevel() == logging.DEBUG:
+                    logger.error(f"Traceback: {traceback.format_exc()}")
 
         return skip_reason is not None
 
@@ -371,7 +419,7 @@ class Filter:
                 username, profile_data, SkipReason.POTENCY_RATIO
             )
 
-        if field_mutual_friends != -1:
+        if field_mutual_friends is not None and field_mutual_friends != -1:
             logger.debug(
                 f"Checking if that user has at least {field_mutual_friends} mutual friends."
             )

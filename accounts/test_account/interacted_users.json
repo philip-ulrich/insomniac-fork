@@ -1,0 +1,16 @@
+{
+    "test_user": {
+        "last_interaction": "2024-11-26 01:10:45.677957",
+        "following_status": "followed",
+        "session_id": "b49f2885-7578-43fd-b32e-22e41a54390d",
+        "job_name": "test_job",
+        "target": "test_target",
+        "liked": 50,
+        "watched": 0,
+        "commented": 0,
+        "followed": true,
+        "unfollowed": false,
+        "scraped": false,
+        "pm_sent": false
+    }
+}

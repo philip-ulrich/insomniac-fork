@@ -1,0 +1,103 @@
+##############################################################################
+# For more information on filters, refer to: 
+# https://docs.gramaddict.org/#/configuration?id=available-filters
+#
+# Note: be sure to comment out any filter not used by adding a # in front
+# AGAIN: YOU DON'T HAVE TO DELETE THE LINE, BUT ONLY COMMENT IT WITH A #!
+##############################################################################
+
+## Filters on profile type
+# Profile Filters
+max_following: 7500
+min_following: 10
+max_followers: 15000
+min_followers: 100
+max_posts: 1000
+min_posts: 3
+max_following_to_followers_ratio: 2.0
+min_following_to_followers_ratio: null
+max_followers_to_following_ratio: null
+min_followers_to_following_ratio: null
+max_potency_ratio: 1.5
+min_potency_ratio: 0.1
+biography_language: null
+biography_banned_words: []
+biography_mandatory_words: []
+business_category_name: []
+is_private: null
+is_verified: null
+is_business: null
+is_non_business: null
+blacklist_words: []
+mandatory_words: []
+specific_alphabet: null
+min_posts_from_date: null
+posts_from_date: null
+mutual_friends: null
+following_bot: null
+last_post: null
+potency_ratio: null
+has_any_business_category: null
+has_highlights: null
+has_guides: null
+has_external_url: null
+has_business_category_name: null
+has_biography_links: null
+has_igtv: null
+has_linked_facebook: null
+has_story_highlights: null
+has_youtube: null
+has_twitter: null
+has_facebook: null
+has_whatsapp: null
+has_tiktok: null
+
+## Filters on profile stats
+# Skip if profile has...
+skip_if_link_in_bio: false
+skip_if_external_url: false
+skip_if_business: false
+skip_business_categories: []
+skip_bio_keyword: []
+skip_if_bio_keyword: []
+skip_if_bio_contains_anything: false
+
+## Filters on biography and name
+# Skip if profile has no...
+skip_if_no_avatar: false
+skip_if_no_bio: false
+skip_if_no_posts: false
+skip_if_no_igtv: false
+skip_if_no_story_highlights: false
+skip_if_no_mutual_friends: false
+
+## Filters for enabling comments
+# Skip if profile is...
+skip_if_private: false
+skip_if_public: false
+skip_if_verified: false
+skip_if_non_business: false
+skip_if_following_bot: false
+
+## Filters for sending PM
+# Skip if profile has less than...
+skip_if_following_less_than: null
+skip_if_followers_less_than: null
+skip_if_posts_less_than: null
+skip_if_mutual_friends_less_than: null
+
+## Filters on number of post likers
+# Skip if profile has more than...
+skip_if_following_more_than: null
+skip_if_followers_more_than: null
+skip_if_posts_more_than: null
+skip_if_mutual_friends_more_than: null
+
+## Filters on potency ratio
+# Skip if profile has ratio...
+skip_if_following_to_followers_ratio_less_than: null
+skip_if_following_to_followers_ratio_more_than: null
+skip_if_followers_to_following_ratio_less_than: null
+skip_if_followers_to_following_ratio_more_than: null
+skip_if_potency_ratio_less_than: null
+skip_if_potency_ratio_more_than: null

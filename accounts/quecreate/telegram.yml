@@ -1,0 +1,6 @@
+# The complete guide can be found here: https://docs.gramaddict.org/#/configuration?id=telegram-reports
+# telegram-api-token -> https://t.me/botfather to create your telegram bot account
+# telegram-chat-id -> https://t.me/myidbot to know your chat-id where the bot will send reports
+
+telegram-api-token: your-api-token-here
+telegram-chat-id: your-chat-id-here

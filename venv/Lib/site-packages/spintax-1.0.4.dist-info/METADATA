@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: spintax
+Version: 1.0.4
+Summary: A Python module for parsing spintax
+Home-page: http://github.com/AceLewis/spintax
+Author: AceLewis
+Author-email: UNKNOWN
+License: GPLv3
+Download-URL: https://github.com/AceLewis/spintax/archive/master.zip
+Keywords: spintax,spin syntax,spintax parser,spinning,spin
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Text Processing
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+
+A Python module for parsing spintax, unlike any other module this works with nested spintax and also allows the user to escape the special characters used in its syntax.
+
+

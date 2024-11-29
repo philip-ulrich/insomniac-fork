@@ -1,0 +1,18 @@
+Metadata-Version: 2.0
+Name: cigam
+Version: 0.0.3
+Summary: magic
+Home-page: https://github.com/mikusjelly/cigam
+Author: mikusjelly
+Author-email: mikusjelly@gmail.com
+License: MIT
+Keywords: file type,file magic
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Topic :: Utilities
+
+UNKNOWN
+
+

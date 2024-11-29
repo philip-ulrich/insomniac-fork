@@ -1,4 +1,5 @@
 import logging
+import time
 from GramAddict.core.plugin_loader import Plugin
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,20 @@ class DBInitPlugin(Plugin):
         # Check if nocodb plugin is enabled and initialized
         from GramAddict.plugins.nocodb_storage import NocoDBStorage
         nocodb = None
-        for plugin in configs.plugins:
-            if isinstance(plugin, NocoDBStorage) and plugin.enabled:
-                nocodb = plugin
+        
+        # Wait for NocoDB plugin to initialize (max 30 seconds)
+        max_retries = 30
+        retry_count = 0
+        while retry_count < max_retries:
+            for plugin in configs.plugins:
+                if isinstance(plugin, NocoDBStorage) and plugin.enabled:
+                    nocodb = plugin
+                    break
+            if nocodb:
                 break
+            logger.info("Waiting for NocoDB plugin to initialize...")
+            time.sleep(1)
+            retry_count += 1
                 
         if not nocodb:
             logger.warning("NocoDB plugin not found or not enabled. Please enable it with --use-nocodb")

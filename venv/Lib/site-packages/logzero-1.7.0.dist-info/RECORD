@@ -1,0 +1,12 @@
+logzero-1.7.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+logzero-1.7.0.dist-info/LICENSE,sha256=IeyJlW6AX3kSESE-lnz_s-FSsIX0CIrd8Y7_zZuhwao,1071
+logzero-1.7.0.dist-info/METADATA,sha256=RnqydvBk1dmpes7e7az2Dkrc3_N1YZB7nqiDI2MxM34,11479
+logzero-1.7.0.dist-info/RECORD,,
+logzero-1.7.0.dist-info/WHEEL,sha256=Z-nyYpwrcSqxfdux5Mbn_DQ525iP7J2DG3JgGvOYyTQ,110
+logzero-1.7.0.dist-info/top_level.txt,sha256=jDxqOuhxW3IW3phWP4IXBc6_RkGrPcAz3Ro2fzsg3aQ,8
+logzero/__init__.py,sha256=EcWUjNgJPCcZ_xnStLr9CGl_3DcSFBJvl-PUtjG0sOw,22863
+logzero/__pycache__/__init__.cpython-39.pyc,,
+logzero/__pycache__/colors.cpython-39.pyc,,
+logzero/__pycache__/jsonlogger.cpython-39.pyc,,
+logzero/colors.py,sha256=i4yHz9ZbZM8fCOo8znHOCtLlNlv7qIFUUlMIGr38VzI,2226
+logzero/jsonlogger.py,sha256=oD0r-RheleHxDCndgOr4PTcd3A0IuQ3pMGrozZzpRqU,8827

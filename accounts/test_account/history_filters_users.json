@@ -1,0 +1,17 @@
+{
+    "filtered_user": {
+        "user_id": "filtered_user_123",
+        "username": "filtered_user",
+        "is_private": false,
+        "has_business_category": false,
+        "posts_count": 10,
+        "biography": "Test bio",
+        "link_in_bio": false,
+        "followers": 100,
+        "followings": 100,
+        "mutual_friends": 0,
+        "follow_button_text": "FOLLOW",
+        "is_restricted": false,
+        "skip_reason": "test_filter"
+    }
+}
