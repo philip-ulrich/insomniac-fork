@@ -127,7 +127,17 @@ VirtualInfluencer is an Instagram automation bot that provides a REST API interf
 ## Progress Update (2024-01-09)
 
 ### Completed Tasks
-1. Implemented accounts endpoint (/accounts)
+1. Implemented account configuration endpoint (/account_config/{account})
+   - Retrieves account-specific settings from config.yml
+   - Converts YAML format to standardized JSON response
+   - Includes comprehensive settings:
+     * General configuration (app ID, debug mode, etc.)
+     * Action settings (video time, photo time)
+     * Interaction settings (blogger followers, feed)
+     * Optional configurations with proper defaults
+   - Handles missing or invalid config files gracefully
+
+2. Implemented accounts endpoint (/accounts)
    - Lists all configured Instagram accounts
    - Returns comprehensive account information:
      * Username and profile stats (posts, followers, following)
@@ -137,7 +147,7 @@ VirtualInfluencer is an Instagram automation bot that provides a REST API interf
    - Handles missing or invalid session files gracefully
    - Provides real-time active status tracking
 
-2. Implemented interaction limits endpoint (/interaction_limits)
+3. Implemented interaction limits endpoint (/interaction_limits)
    - Retrieves account-specific interaction limits from sessions.json
    - Handles limit ranges (e.g., "120-150" -> 150)
    - Returns comprehensive limits for:
@@ -153,6 +163,7 @@ VirtualInfluencer is an Instagram automation bot that provides a REST API interf
 - API endpoints for bot management are operational
 - Bot statistics tracking is implemented
 - Account management and monitoring in place
+- Configuration retrieval system implemented
 - Interaction limits can be retrieved and monitored
 - Error handling and validation in place
 
@@ -163,6 +174,7 @@ VirtualInfluencer is an Instagram automation bot that provides a REST API interf
    - Bot statistics endpoint
    - Interaction limits endpoint
    - Accounts endpoint
+   - Account config endpoint
    - Session management functions
 4. Enhance error handling with more descriptive messages
 5. Add documentation for all API endpoints

@@ -25498,3 +25498,11 @@ ValueError: I/O operation on closed file.
 2024-11-30 16:26:40,765 - api.main - INFO - All tasks cleaned up.
 2024-11-30 16:26:40,795 - api.main - INFO - All tasks cleaned up.
 2024-11-30 16:26:40,856 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:26:41,617 - api.main - INFO - API startup complete
+2024-11-30 16:26:41,650 - api.main - INFO - API startup complete
+2024-11-30 16:26:41,705 - api.main - INFO - API startup complete
+2024-11-30 16:26:50,679 - api.main - INFO - API startup complete
+2024-11-30 16:30:48,629 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:30:48,629 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:30:48,675 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:30:48,706 - api.main - INFO - All tasks cleaned up.

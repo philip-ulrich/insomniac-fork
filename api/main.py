@@ -21,6 +21,8 @@ from api.history import HistoryManager, Interaction
 from pydantic import BaseModel
 import psutil
 import json
+import yaml
+from typing import Any, Dict
 
 app = FastAPI()
 
@@ -124,6 +126,42 @@ class AccountInfo(BaseModel):
     last_session_time: Optional[datetime] = None
     is_active: bool = False
     config_exists: bool = True
+
+class AccountConfig(BaseModel):
+    """Model for account configuration"""
+    username: str
+    app_id: str = "com.instagram.android"
+    use_cloned_app: bool = False
+    allow_untested_ig_version: bool = False
+    screen_sleep: bool = True
+    screen_record: bool = False
+    speed_multiplier: float = 1.0
+    debug: bool = True
+    close_apps: bool = False
+    kill_atx_agent: bool = False
+    restart_atx_agent: bool = False
+    disable_block_detection: bool = False
+    disable_filters: bool = False
+    dont_type: bool = False
+    use_nocodb: bool = True
+    init_db: bool = True
+    total_crashes_limit: int = 5
+    count_app_crashes: bool = False
+    shuffle_jobs: bool = True
+    truncate_sources: str = "2-5"
+    # Action configurations
+    blogger_followers: list[str] = []
+    watch_video_time: str = "15-35"
+    watch_photo_time: str = "3-4"
+    delete_interacted_users: bool = True
+    # Optional fields
+    device: Optional[str] = None
+    scrape_to_file: Optional[str] = None
+    can_reinteract_after: Optional[int] = None
+    feed: Optional[str] = None
+    unfollow: Optional[str] = None
+    unfollow_any: Optional[str] = None
+    unfollow_non_followers: Optional[str] = None
 
 async def check_session_timeout():
     """Background task to check for session timeouts"""
@@ -672,4 +710,58 @@ async def get_interaction_limits(account: str) -> InteractionLimits:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get interaction limits: {str(e)}"
+        )
+
+@app.get("/account_config/{account}")
+async def get_account_config(account: str) -> AccountConfig:
+    """
+    Get configuration for a specific account.
+    Returns all settings from the account's config.yml file.
+    """
+    try:
+        config_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'accounts',
+            account,
+            'config.yml'
+        )
+        
+        if not os.path.exists(config_file):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Configuration file not found for account {account}"
+            )
+            
+        # Read and parse YAML config
+        with open(config_file, 'r') as f:
+            config_data = yaml.safe_load(f)
+            
+        # Convert YAML keys to match Pydantic model (replace hyphens with underscores)
+        converted_config = {}
+        for key, value in config_data.items():
+            new_key = key.replace('-', '_')
+            converted_config[new_key] = value
+            
+        # Create AccountConfig instance
+        try:
+            config = AccountConfig(**converted_config)
+            return config
+        except ValueError as e:
+            logger.error(f"Error validating config for account {account}: {str(e)}")
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid configuration format: {str(e)}"
+            )
+            
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing config file for account {account}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse configuration file: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting config for account {account}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get account configuration: {str(e)}"
         )
