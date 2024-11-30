@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from api.history import HistoryManager, Interaction
 from pydantic import BaseModel
 import psutil
+import json
 
 app = FastAPI()
 
@@ -84,6 +85,35 @@ class SessionStatus(BaseModel):
     cpu_percent: Optional[float] = None
     uptime_minutes: Optional[float] = None
     is_responsive: bool = True
+
+class BotStats(BaseModel):
+    account: str
+    total_interactions_24h: int = 0
+    successful_interactions_24h: int = 0
+    failed_interactions_24h: int = 0
+    success_rate_24h: float = 0.0
+    average_response_time_ms: float = 0.0
+    uptime_hours: float = 0.0
+    total_sessions: int = 0
+    current_session_duration: Optional[float] = None
+    memory_usage_trend: list = []
+    cpu_usage_trend: list = []
+    error_count_24h: int = 0
+
+class InteractionLimits(BaseModel):
+    """Model for interaction limits"""
+    account: str
+    likes_limit: int
+    follow_limit: int
+    unfollow_limit: int
+    comments_limit: int
+    pm_limit: int
+    watch_limit: int
+    success_limit: int
+    total_limit: int
+    scraped_limit: int
+    crashes_limit: int
+    time_delta_session: int
 
 async def check_session_timeout():
     """Background task to check for session timeouts"""
@@ -325,7 +355,10 @@ async def stop_session(request: SessionRequest):
     
     except Exception as e:
         logger.error(f"Error stopping session for account {account}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to stop session: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to stop session: {str(e)}"
+        )
 
 def get_process_info(pid: int) -> dict:
     """Get detailed process information"""
@@ -430,3 +463,142 @@ async def test_interaction():
     """Test endpoint to create a sample interaction"""
     # Implementation for test interaction
     pass
+
+@app.get("/bot_stats")
+async def get_bot_stats(account: str) -> BotStats:
+    """
+    Get comprehensive bot statistics for the specified account.
+    Includes 24-hour metrics, performance data, and resource usage trends.
+    """
+    try:
+        # Get history manager and initialize it
+        history_manager = HistoryManager()
+        
+        # Get current timestamp and 24 hours ago
+        now = datetime.now()
+        twenty_four_hours_ago = now - timedelta(hours=24)
+        
+        # Get all interactions in the last 24 hours
+        interactions = history_manager.get_interactions(account, start_time=twenty_four_hours_ago)
+        
+        # Calculate interaction statistics
+        total_interactions = len(interactions)
+        successful_interactions = sum(1 for i in interactions if not i.error)
+        failed_interactions = total_interactions - successful_interactions
+        success_rate = (successful_interactions / total_interactions * 100) if total_interactions > 0 else 0
+        
+        # Calculate average response time (from successful interactions)
+        response_times = [i.duration for i in interactions if i.duration and not i.error]
+        avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+        
+        # Get current session info
+        session_info = active_sessions.get(account, {})
+        start_time = session_info.get('start_time')
+        current_duration = (now - start_time).total_seconds() / 3600 if start_time else None
+        
+        # Get process info for resource usage trends
+        process_info = None
+        if session_info.get('pid'):
+            try:
+                process = psutil.Process(session_info['pid'])
+                process_info = await get_process_info(session_info['pid'])
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        
+        # Compile stats
+        stats = BotStats(
+            account=account,
+            total_interactions_24h=total_interactions,
+            successful_interactions_24h=successful_interactions,
+            failed_interactions_24h=failed_interactions,
+            success_rate_24h=success_rate,
+            average_response_time_ms=avg_response_time * 1000,  # Convert to milliseconds
+            uptime_hours=current_duration or 0.0,
+            total_sessions=1 if start_time else 0,  # Basic implementation, could be enhanced
+            current_session_duration=current_duration,
+            memory_usage_trend=[process_info['memory_usage_mb']] if process_info else [],
+            cpu_usage_trend=[process_info['cpu_percent']] if process_info else [],
+            error_count_24h=failed_interactions
+        )
+        
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Error getting bot stats for account {account}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get bot statistics: {str(e)}"
+        )
+
+@app.get("/interaction_limits")
+async def get_interaction_limits(account: str) -> InteractionLimits:
+    """
+    Get current interaction limits for the specified account.
+    Returns all configured limits including likes, follows, comments, PMs, etc.
+    """
+    try:
+        # Get session data from the account's sessions.json
+        session_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                  'accounts', account, 'sessions.json')
+        
+        if not os.path.exists(session_file):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Account {account} not found or has no session configuration"
+            )
+            
+        with open(session_file, 'r') as f:
+            session_data = json.loads(f.read())
+            
+        # Get the most recent session
+        if not session_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No sessions found for account {account}"
+            )
+            
+        latest_session = session_data[-1]
+        args = latest_session.get('args', {})
+        
+        # Parse limit ranges (e.g. "120-150" -> 150)
+        def parse_limit(limit_str):
+            if not limit_str:
+                return 0
+            try:
+                if isinstance(limit_str, (int, float)):
+                    return int(limit_str)
+                parts = str(limit_str).split('-')
+                return int(parts[-1])  # Take the upper limit
+            except (ValueError, IndexError):
+                return 0
+            
+        # Extract limits from session args
+        limits = InteractionLimits(
+            account=account,
+            likes_limit=parse_limit(args.get('total_likes_limit', 0)),
+            follow_limit=parse_limit(args.get('total_follows_limit', 0)),
+            unfollow_limit=parse_limit(args.get('total_unfollows_limit', 0)),
+            comments_limit=parse_limit(args.get('total_comments_limit', 0)),
+            pm_limit=parse_limit(args.get('total_pm_limit', 0)),
+            watch_limit=parse_limit(args.get('total_watches_limit', 0)),
+            success_limit=parse_limit(args.get('total_successful_interactions_limit', 0)),
+            total_limit=parse_limit(args.get('total_interactions_limit', 0)),
+            scraped_limit=parse_limit(args.get('total_scraped_limit', 0)),
+            crashes_limit=parse_limit(args.get('total_crashes_limit', 0)),
+            time_delta_session=parse_limit(args.get('time_delta_session', 0))
+        )
+        
+        return limits
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing session file for account {account}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse session configuration: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting interaction limits for account {account}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get interaction limits: {str(e)}"
+        )
