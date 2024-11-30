@@ -136,7 +136,7 @@ async def start_session(request: SessionRequest):
             raise HTTPException(status_code=404, detail=error_msg)
             
         # Create a background task to run the bot
-        cmd = [python_path, "-v", run_script, "--config", config_path, "--use-nocodb", "--init-db", "--debug"]
+        cmd = [python_path, "-v", run_script, "--config", config_path, "--use-nocodb", "--debug"]
         logger.info(f"Running command: {' '.join(cmd)}")
         logger.info(f"Working directory: {base_dir}")
         logger.info(f"Environment PYTHONPATH: {os.environ.get('PYTHONPATH')}")
@@ -171,7 +171,7 @@ async def start_session(request: SessionRequest):
                         universal_newlines=True
                     )
                     
-                    def log_output(pipe, prefix):
+                    def log_output(pipe, prefix, log_file):
                         with open(log_file, 'a', encoding='utf-8', buffering=1) as f:
                             try:
                                 for line in pipe:
@@ -184,8 +184,8 @@ async def start_session(request: SessionRequest):
                                 logger.error(f"Error in log_output thread: {str(e)}", exc_info=True)
                     
                     # Start threads to continuously read and log output
-                    stdout_thread = threading.Thread(target=log_output, args=(process.stdout, "STDOUT"))
-                    stderr_thread = threading.Thread(target=log_output, args=(process.stderr, "STDERR"))
+                    stdout_thread = threading.Thread(target=log_output, args=(process.stdout, "STDOUT", log_file))
+                    stderr_thread = threading.Thread(target=log_output, args=(process.stderr, "STDERR", log_file))
                     stdout_thread.daemon = True
                     stderr_thread.daemon = True
                     stdout_thread.start()
@@ -198,16 +198,13 @@ async def start_session(request: SessionRequest):
                     logger.error(f"Failed to start process: {str(e)}", exc_info=True)
                     return None
 
-            # Start the process in a thread
-            process_thread = threading.Thread(target=run_process_in_thread)
-            process_thread.daemon = True
-            process_thread.start()
-            
-            # Give the process a moment to start
-            await asyncio.sleep(1)
-            
+            # Start the process in a separate thread
+            process = run_process_in_thread()
+            if process is None:
+                raise HTTPException(status_code=500, detail="Failed to start bot process")
+
             logger.info(f"Successfully started session for account: {request.account}")
-            return {"message": f"Started session for account: {request.account}", "status": "running"}
+            return {"message": f"Started session for account: {request.account}", "status": "running", "pid": process.pid}
             
         except Exception as e:
             error_msg = f"Failed to start process: {str(e)}"
