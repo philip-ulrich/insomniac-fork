@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 import logging
 import asyncio
+from contextlib import suppress
 from typing import Dict, Optional
 from api.plugins.plugin_loader import PluginLoader
 from api.plugins.base_plugin import BasePlugin
@@ -14,10 +15,22 @@ from api.config.nocodb import (
     NOCODB_INTERACTED_USERS_VIEW_ID
 )
 import os
+import sys
 from datetime import datetime
 from api.history import HistoryManager, Interaction
+from pydantic import BaseModel
 
 app = FastAPI()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'api.log'))
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Initialize plugin loader
@@ -51,11 +64,16 @@ async def cleanup_tasks():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize plugins on startup"""
-    global sync_plugin
-    sync_plugin = plugin_loader.load_sync_plugin()
-    if sync_plugin:
-        logger.info("Sync plugin loaded successfully.")
+    """Initialize API on startup"""
+    try:
+        # Create logs directory if it doesn't exist
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        logs_dir = os.path.join(base_dir, 'logs')
+        os.makedirs(logs_dir, exist_ok=True)
+        logger.info("API startup complete")
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        raise
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -97,39 +115,103 @@ async def clear_history(account: str, history_type: Optional[str] = None):
     # Implementation for clearing history
     pass
 
+class SessionRequest(BaseModel):
+    account: str
+
 @app.post("/start_session")
-async def start_session(account: str):
+async def start_session(request: SessionRequest):
     """Start a bot session for the specified account"""
     try:
-        config_path = f"accounts/{account}/config.yml"
-        logger.info(f"Starting session for account {account} with config {config_path}")
+        # Get absolute paths
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config_path = os.path.join(base_dir, "accounts", request.account, "config.yml")
+        python_path = os.path.join(base_dir, "venv", "Scripts", "python.exe")
+        run_script = os.path.join(base_dir, "run.py")
+        
+        logger.info(f"Starting session for account {request.account} with config {config_path}")
         
         if not os.path.exists(config_path):
-            error_msg = f"Configuration not found for account: {account} at path: {config_path}"
+            error_msg = f"Configuration not found for account: {request.account} at path: {config_path}"
             logger.error(error_msg)
             raise HTTPException(status_code=404, detail=error_msg)
             
         # Create a background task to run the bot
-        cmd = ["venv/Scripts/python", "run.py", "--config", config_path, "--use-nocodb", "--debug"]
-        logger.info(f"Executing command: {' '.join(cmd)}")
+        cmd = [python_path, "-v", run_script, "--config", config_path, "--use-nocodb", "--init-db", "--debug"]
+        logger.info(f"Running command: {' '.join(cmd)}")
+        logger.info(f"Working directory: {base_dir}")
+        logger.info(f"Environment PYTHONPATH: {os.environ.get('PYTHONPATH')}")
         
         try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
+            import subprocess
+            import threading
             
-            # Register the task
-            task = asyncio.create_task(process.communicate())
-            register_task(task)
+            # Set up environment variables
+            env = os.environ.copy()
+            project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            env["PYTHONPATH"] = project_dir
             
-            logger.info(f"Successfully started session for account: {account}")
-            return {"message": f"Started session for account: {account}", "status": "running"}
+            def run_process_in_thread():
+                try:
+                    logger.info(f"Starting process with command: {' '.join(cmd)}")
+                    logger.info(f"Working directory: {base_dir}")
+                    logger.info(f"PYTHONPATH: {env['PYTHONPATH']}")
+                    
+                    # Create log file for the bot
+                    log_file = os.path.join(project_dir, "logs", f"{request.account}.log")
+                    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+                    
+                    process = subprocess.Popen(
+                        cmd,
+                        cwd=base_dir,
+                        env=env,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        bufsize=1,
+                        universal_newlines=True
+                    )
+                    
+                    def log_output(pipe, prefix):
+                        with open(log_file, 'a', encoding='utf-8', buffering=1) as f:
+                            try:
+                                for line in pipe:
+                                    line = line.strip()
+                                    if line:
+                                        logger.info(f"{prefix}: {line}")
+                                        f.write(f"{prefix}: {line}\n")
+                                        f.flush()
+                            except Exception as e:
+                                logger.error(f"Error in log_output thread: {str(e)}", exc_info=True)
+                    
+                    # Start threads to continuously read and log output
+                    stdout_thread = threading.Thread(target=log_output, args=(process.stdout, "STDOUT"))
+                    stderr_thread = threading.Thread(target=log_output, args=(process.stderr, "STDERR"))
+                    stdout_thread.daemon = True
+                    stderr_thread.daemon = True
+                    stdout_thread.start()
+                    stderr_thread.start()
+                    
+                    logger.info(f"Process started with PID: {process.pid}")
+                    return process
+                    
+                except Exception as e:
+                    logger.error(f"Failed to start process: {str(e)}", exc_info=True)
+                    return None
+
+            # Start the process in a thread
+            process_thread = threading.Thread(target=run_process_in_thread)
+            process_thread.daemon = True
+            process_thread.start()
+            
+            # Give the process a moment to start
+            await asyncio.sleep(1)
+            
+            logger.info(f"Successfully started session for account: {request.account}")
+            return {"message": f"Started session for account: {request.account}", "status": "running"}
             
         except Exception as e:
             error_msg = f"Failed to start process: {str(e)}"
-            logger.error(error_msg)
+            logger.error(error_msg, exc_info=True)
             raise HTTPException(status_code=500, detail=error_msg)
             
     except Exception as e:

@@ -30,7 +30,13 @@ class BaseReporter(object):
             requirements passed in from ``Resolver.resolve()``.
         """
 
-    def backtracking(self, candidate):
+    def resolving_conflicts(self, causes):
+        """Called when starting to attempt requirement conflict resolution.
+
+        :param causes: The information on the collision that caused the backtracking.
+        """
+
+    def rejecting_candidate(self, criterion, candidate):
         """Called when rejecting a candidate during backtracking."""
 
     def pinning(self, candidate):

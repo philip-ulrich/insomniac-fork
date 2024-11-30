@@ -16,6 +16,7 @@ import warnings
 # import that large-ish module (indirectly, through distutils.core) in
 # order to do anything.
 
+
 class Extension:
     """Just a collection of attributes that describes an extension
     module and everything needed to build it (hopefully in a portable
@@ -25,7 +26,7 @@ class Extension:
       name : string
         the full name of the extension, including any packages -- ie.
         *not* a filename or pathname, but Python dotted name
-      sources : [string]
+      sources : [string | os.PathLike]
         list of source filenames, relative to the distribution root
         (where the setup script lives), in Unix form (slash-separated)
         for portability.  Source files may be C, C++, SWIG (.i),
@@ -83,31 +84,38 @@ class Extension:
 
     # When adding arguments to this constructor, be sure to update
     # setup_keywords in core.py.
-    def __init__(self, name, sources,
-                  include_dirs=None,
-                  define_macros=None,
-                  undef_macros=None,
-                  library_dirs=None,
-                  libraries=None,
-                  runtime_library_dirs=None,
-                  extra_objects=None,
-                  extra_compile_args=None,
-                  extra_link_args=None,
-                  export_symbols=None,
-                  swig_opts = None,
-                  depends=None,
-                  language=None,
-                  optional=None,
-                  **kw                      # To catch unknown keywords
-                 ):
+    def __init__(
+        self,
+        name,
+        sources,
+        include_dirs=None,
+        define_macros=None,
+        undef_macros=None,
+        library_dirs=None,
+        libraries=None,
+        runtime_library_dirs=None,
+        extra_objects=None,
+        extra_compile_args=None,
+        extra_link_args=None,
+        export_symbols=None,
+        swig_opts=None,
+        depends=None,
+        language=None,
+        optional=None,
+        **kw,  # To catch unknown keywords
+    ):
         if not isinstance(name, str):
-            raise AssertionError("'name' must be a string")
-        if not (isinstance(sources, list) and
-                all(isinstance(v, str) for v in sources)):
-            raise AssertionError("'sources' must be a list of strings")
+            raise AssertionError("'name' must be a string")  # noqa: TRY004
+        if not (
+            isinstance(sources, list)
+            and all(isinstance(v, (str, os.PathLike)) for v in sources)
+        ):
+            raise AssertionError(
+                "'sources' must be a list of strings or PathLike objects."
+            )
 
         self.name = name
-        self.sources = sources
+        self.sources = list(map(os.fspath, sources))
         self.include_dirs = include_dirs or []
         self.define_macros = define_macros or []
         self.undef_macros = undef_macros or []
@@ -127,22 +135,16 @@ class Extension:
         if len(kw) > 0:
             options = [repr(option) for option in kw]
             options = ', '.join(sorted(options))
-            msg = "Unknown Extension options: %s" % options
+            msg = f"Unknown Extension options: {options}"
             warnings.warn(msg)
 
     def __repr__(self):
-        return '<%s.%s(%r) at %#x>' % (
-            self.__class__.__module__,
-            self.__class__.__qualname__,
-            self.name,
-            id(self))
+        return f'<{self.__class__.__module__}.{self.__class__.__qualname__}({self.name!r}) at {id(self):#x}>'
 
 
-def read_setup_file(filename):
+def read_setup_file(filename):  # noqa: C901
     """Reads a Setup file and returns Extension instances."""
-    from distutils.sysconfig import (parse_makefile, expand_makefile_vars,
-                                     _variable_rx)
-
+    from distutils.sysconfig import _variable_rx, expand_makefile_vars, parse_makefile
     from distutils.text_file import TextFile
     from distutils.util import split_quoted
 
@@ -151,21 +153,26 @@ def read_setup_file(filename):
 
     # Second pass to gobble up the real content: lines of the form
     #   <module> ... [<sourcefile> ...] [<cpparg> ...] [<library> ...]
-    file = TextFile(filename,
-                    strip_comments=1, skip_blanks=1, join_lines=1,
-                    lstrip_ws=1, rstrip_ws=1)
+    file = TextFile(
+        filename,
+        strip_comments=True,
+        skip_blanks=True,
+        join_lines=True,
+        lstrip_ws=True,
+        rstrip_ws=True,
+    )
     try:
         extensions = []
 
         while True:
             line = file.readline()
-            if line is None:                # eof
+            if line is None:  # eof
                 break
-            if _variable_rx.match(line):    # VAR=VALUE, handled in first pass
+            if _variable_rx.match(line):  # VAR=VALUE, handled in first pass
                 continue
 
             if line[0] == line[-1] == "*":
-                file.warn("'%s' lines not handled yet" % line)
+                file.warn(f"'{line}' lines not handled yet")
                 continue
 
             line = expand_makefile_vars(line, vars)
@@ -188,7 +195,8 @@ def read_setup_file(filename):
                     continue
 
                 suffix = os.path.splitext(word)[1]
-                switch = word[0:2] ; value = word[2:]
+                switch = word[0:2]
+                value = word[2:]
 
                 if suffix in (".c", ".cc", ".cpp", ".cxx", ".c++", ".m", ".mm"):
                     # hmm, should we do something about C vs. C++ sources?
@@ -199,14 +207,13 @@ def read_setup_file(filename):
                     ext.include_dirs.append(value)
                 elif switch == "-D":
                     equals = value.find("=")
-                    if equals == -1:        # bare "-DFOO" -- no value
+                    if equals == -1:  # bare "-DFOO" -- no value
                         ext.define_macros.append((value, None))
-                    else:                   # "-DFOO=blah"
-                        ext.define_macros.append((value[0:equals],
-                                                  value[equals+2:]))
+                    else:  # "-DFOO=blah"
+                        ext.define_macros.append((value[0:equals], value[equals + 2 :]))
                 elif switch == "-U":
                     ext.undef_macros.append(value)
-                elif switch == "-C":        # only here 'cause makesetup has it!
+                elif switch == "-C":  # only here 'cause makesetup has it!
                     ext.extra_compile_args.append(word)
                 elif switch == "-l":
                     ext.libraries.append(value)
@@ -231,7 +238,7 @@ def read_setup_file(filename):
                     # and append it to sources.  Hmmmm.
                     ext.extra_objects.append(word)
                 else:
-                    file.warn("unrecognized argument '%s'" % word)
+                    file.warn(f"unrecognized argument '{word}'")
 
             extensions.append(ext)
     finally:

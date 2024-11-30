@@ -1,5 +1,5 @@
 class AbstractProvider(object):
-    """Delegate class to provide requirement interface for the resolver."""
+    """Delegate class to provide the required interface for the resolver."""
 
     def identify(self, requirement_or_candidate):
         """Given a requirement, return an identifier for it.
@@ -9,7 +9,14 @@ class AbstractProvider(object):
         """
         raise NotImplementedError
 
-    def get_preference(self, identifier, resolutions, candidates, information):
+    def get_preference(
+        self,
+        identifier,
+        resolutions,
+        candidates,
+        information,
+        backtrack_causes,
+    ):
         """Produce a sort key for given requirement based on preference.
 
         The preference is defined as "I think this requirement should be
@@ -17,23 +24,25 @@ class AbstractProvider(object):
         this group of arguments is.
 
         :param identifier: An identifier as returned by ``identify()``. This
-            identifies the dependency matches of which should be returned.
+            identifies the dependency matches which should be returned.
         :param resolutions: Mapping of candidates currently pinned by the
-            resolver. Each key is an identifier, and the value a candidate.
+            resolver. Each key is an identifier, and the value is a candidate.
             The candidate may conflict with requirements from ``information``.
         :param candidates: Mapping of each dependency's possible candidates.
             Each value is an iterator of candidates.
         :param information: Mapping of requirement information of each package.
             Each value is an iterator of *requirement information*.
+        :param backtrack_causes: Sequence of requirement information that were
+            the requirements that caused the resolver to most recently backtrack.
 
         A *requirement information* instance is a named tuple with two members:
 
         * ``requirement`` specifies a requirement contributing to the current
           list of candidates.
-        * ``parent`` specifies the candidate that provides (dependend on) the
+        * ``parent`` specifies the candidate that provides (depended on) the
           requirement, or ``None`` to indicate a root requirement.
 
-        The preference could depend on a various of issues, including (not
+        The preference could depend on various issues, including (not
         necessarily in this order):
 
         * Is this package pinned in the current resolution result?
@@ -52,7 +61,7 @@ class AbstractProvider(object):
         raise NotImplementedError
 
     def find_matches(self, identifier, requirements, incompatibilities):
-        """Find all possible candidates that satisfy given constraints.
+        """Find all possible candidates that satisfy the given constraints.
 
         :param identifier: An identifier as returned by ``identify()``. This
             identifies the dependency matches of which should be returned.
@@ -83,7 +92,7 @@ class AbstractProvider(object):
     def is_satisfied_by(self, requirement, candidate):
         """Whether the given requirement can be satisfied by a candidate.
 
-        The candidate is guarenteed to have been generated from the
+        The candidate is guaranteed to have been generated from the
         requirement.
 
         A boolean should be returned to indicate whether ``candidate`` is a

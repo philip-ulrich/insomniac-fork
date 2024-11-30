@@ -3,8 +3,19 @@ import itertools
 import logging
 import os.path
 import tempfile
+import traceback
 from contextlib import ExitStack, contextmanager
-from typing import Any, Dict, Iterator, Optional, TypeVar, Union
+from pathlib import Path
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from pip._internal.utils.misc import enum, rmtree
 
@@ -22,12 +33,11 @@ tempdir_kinds = enum(
 )
 
 
-_tempdir_manager = None  # type: Optional[ExitStack]
+_tempdir_manager: Optional[ExitStack] = None
 
 
 @contextmanager
-def global_tempdir_manager():
-    # type: () -> Iterator[None]
+def global_tempdir_manager() -> Generator[None, None, None]:
     global _tempdir_manager
     with ExitStack() as stack:
         old_tempdir_manager, _tempdir_manager = _tempdir_manager, stack
@@ -40,31 +50,27 @@ def global_tempdir_manager():
 class TempDirectoryTypeRegistry:
     """Manages temp directory behavior"""
 
-    def __init__(self):
-        # type: () -> None
-        self._should_delete = {}  # type: Dict[str, bool]
+    def __init__(self) -> None:
+        self._should_delete: Dict[str, bool] = {}
 
-    def set_delete(self, kind, value):
-        # type: (str, bool) -> None
+    def set_delete(self, kind: str, value: bool) -> None:
         """Indicate whether a TempDirectory of the given kind should be
         auto-deleted.
         """
         self._should_delete[kind] = value
 
-    def get_delete(self, kind):
-        # type: (str) -> bool
+    def get_delete(self, kind: str) -> bool:
         """Get configured auto-delete flag for a given TempDirectory type,
         default True.
         """
         return self._should_delete.get(kind, True)
 
 
-_tempdir_registry = None  # type: Optional[TempDirectoryTypeRegistry]
+_tempdir_registry: Optional[TempDirectoryTypeRegistry] = None
 
 
 @contextmanager
-def tempdir_registry():
-    # type: () -> Iterator[TempDirectoryTypeRegistry]
+def tempdir_registry() -> Generator[TempDirectoryTypeRegistry, None, None]:
     """Provides a scoped global tempdir registry that can be used to dictate
     whether directories should be deleted.
     """
@@ -107,10 +113,11 @@ class TempDirectory:
 
     def __init__(
         self,
-        path=None,  # type: Optional[str]
-        delete=_default,  # type: Union[bool, None, _Default]
-        kind="temp",  # type: str
-        globally_managed=False,  # type: bool
+        path: Optional[str] = None,
+        delete: Union[bool, None, _Default] = _default,
+        kind: str = "temp",
+        globally_managed: bool = False,
+        ignore_cleanup_errors: bool = True,
     ):
         super().__init__()
 
@@ -133,27 +140,24 @@ class TempDirectory:
         self._deleted = False
         self.delete = delete
         self.kind = kind
+        self.ignore_cleanup_errors = ignore_cleanup_errors
 
         if globally_managed:
             assert _tempdir_manager is not None
             _tempdir_manager.enter_context(self)
 
     @property
-    def path(self):
-        # type: () -> str
+    def path(self) -> str:
         assert not self._deleted, f"Attempted to access deleted path: {self._path}"
         return self._path
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.path!r}>"
 
-    def __enter__(self):
-        # type: (_T) -> _T
+    def __enter__(self: _T) -> _T:
         return self
 
-    def __exit__(self, exc, value, tb):
-        # type: (Any, Any, Any) -> None
+    def __exit__(self, exc: Any, value: Any, tb: Any) -> None:
         if self.delete is not None:
             delete = self.delete
         elif _tempdir_registry:
@@ -164,8 +168,7 @@ class TempDirectory:
         if delete:
             self.cleanup()
 
-    def _create(self, kind):
-        # type: (str) -> str
+    def _create(self, kind: str) -> str:
         """Create a temporary directory and store its path in self.path"""
         # We realpath here because some systems have their default tmpdir
         # symlinked to another directory.  This tends to confuse build
@@ -175,13 +178,49 @@ class TempDirectory:
         logger.debug("Created temporary directory: %s", path)
         return path
 
-    def cleanup(self):
-        # type: () -> None
+    def cleanup(self) -> None:
         """Remove the temporary directory created and reset state"""
         self._deleted = True
         if not os.path.exists(self._path):
             return
-        rmtree(self._path)
+
+        errors: List[BaseException] = []
+
+        def onerror(
+            func: Callable[..., Any],
+            path: Path,
+            exc_val: BaseException,
+        ) -> None:
+            """Log a warning for a `rmtree` error and continue"""
+            formatted_exc = "\n".join(
+                traceback.format_exception_only(type(exc_val), exc_val)
+            )
+            formatted_exc = formatted_exc.rstrip()  # remove trailing new line
+            if func in (os.unlink, os.remove, os.rmdir):
+                logger.debug(
+                    "Failed to remove a temporary file '%s' due to %s.\n",
+                    path,
+                    formatted_exc,
+                )
+            else:
+                logger.debug("%s failed with %s.", func.__qualname__, formatted_exc)
+            errors.append(exc_val)
+
+        if self.ignore_cleanup_errors:
+            try:
+                # first try with @retry; retrying to handle ephemeral errors
+                rmtree(self._path, ignore_errors=False)
+            except OSError:
+                # last pass ignore/log all errors
+                rmtree(self._path, onexc=onerror)
+            if errors:
+                logger.warning(
+                    "Failed to remove contents in a temporary directory '%s'.\n"
+                    "You can safely remove it manually.",
+                    self._path,
+                )
+        else:
+            rmtree(self._path)
 
 
 class AdjacentTempDirectory(TempDirectory):
@@ -206,14 +245,12 @@ class AdjacentTempDirectory(TempDirectory):
     # with leading '-' and invalid metadata
     LEADING_CHARS = "-~.=%0123456789"
 
-    def __init__(self, original, delete=None):
-        # type: (str, Optional[bool]) -> None
+    def __init__(self, original: str, delete: Optional[bool] = None) -> None:
         self.original = original.rstrip("/\\")
         super().__init__(delete=delete)
 
     @classmethod
-    def _generate_names(cls, name):
-        # type: (str) -> Iterator[str]
+    def _generate_names(cls, name: str) -> Generator[str, None, None]:
         """Generates a series of temporary names.
 
         The algorithm replaces the leading characters in the name
@@ -238,8 +275,7 @@ class AdjacentTempDirectory(TempDirectory):
                 if new_name != name:
                     yield new_name
 
-    def _create(self, kind):
-        # type: (str) -> str
+    def _create(self, kind: str) -> str:
         root, name = os.path.split(self.original)
         for candidate in self._generate_names(name):
             path = os.path.join(root, candidate)

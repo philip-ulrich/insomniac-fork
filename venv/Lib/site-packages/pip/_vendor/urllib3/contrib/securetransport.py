@@ -19,8 +19,8 @@ contrib module. So...here we are.
 
 To use this module, simply import and inject it::
 
-    import urllib3.contrib.securetransport
-    urllib3.contrib.securetransport.inject_into_urllib3()
+    import pip._vendor.urllib3.contrib.securetransport as securetransport
+    securetransport.inject_into_urllib3()
 
 Happy TLSing!
 
@@ -64,9 +64,8 @@ import struct
 import threading
 import weakref
 
-from pip._vendor import six
-
 from .. import util
+from ..packages import six
 from ..util.ssl_ import PROTOCOL_TLS_CLIENT
 from ._securetransport.bindings import CoreFoundation, Security, SecurityConst
 from ._securetransport.low_level import (
@@ -769,7 +768,6 @@ if _fileobject:  # Platform-specific: Python 2
     def makefile(self, mode, bufsize=-1):
         self._makefile_refs += 1
         return _fileobject(self, mode, bufsize, close=True)
-
 
 else:  # Platform-specific: Python 3
 
