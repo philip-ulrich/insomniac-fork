@@ -163,6 +163,24 @@ class AccountConfig(BaseModel):
     unfollow_any: Optional[str] = None
     unfollow_non_followers: Optional[str] = None
 
+    class Config:
+        alias_generator = lambda string: string.replace('_', '-')
+        allow_population_by_field_name = True
+
+class UpdateAccountConfig(BaseModel):
+    """Model for account configuration updates"""
+    config: Dict[str, Any]
+
+class ConfigEntry(BaseModel):
+    """Model for a single configuration entry"""
+    key: str
+    value: Any
+
+class ArrayConfigEntry(BaseModel):
+    """Model for array configuration entry"""
+    key: str
+    item: Any
+
 async def check_session_timeout():
     """Background task to check for session timeouts"""
     while True:
@@ -765,3 +783,383 @@ async def get_account_config(account: str) -> AccountConfig:
             status_code=500,
             detail=f"Failed to get account configuration: {str(e)}"
         )
+
+@app.put("/account_config/{account}")
+async def update_account_config(account: str, update: UpdateAccountConfig):
+    """
+    Update configuration for a specific account.
+    Saves the provided settings to the account's config.yml file.
+    """
+    try:
+        # Construct path to account config
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "accounts")
+        account_dir = os.path.join(accounts_dir, account)
+        config_path = os.path.join(account_dir, "config.yml")
+
+        # Verify account directory exists
+        if not os.path.exists(account_dir):
+            raise HTTPException(status_code=404, detail=f"Account {account} not found")
+
+        # Read existing config
+        try:
+            with open(config_path, 'r') as f:
+                current_config = yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            current_config = {}
+
+        # Convert keys to use hyphens instead of underscores
+        updated_config = {k.replace('_', '-'): v for k, v in update.config.items()}
+        
+        # Update config with new values
+        current_config.update(updated_config)
+
+        # Remove username from config if present to avoid duplicate
+        current_config.pop('username', None)
+
+        # Validate config using Pydantic model
+        try:
+            AccountConfig(username=account, **{k.replace('-', '_'): v for k, v in current_config.items()})
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid configuration: {str(e)}")
+
+        # Save updated config
+        with open(config_path, 'w') as f:
+            yaml.safe_dump(current_config, f, default_flow_style=False)
+
+        logger.info(f"Updated configuration for account {account}")
+        return {"status": "success", "message": f"Configuration updated for account {account}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating configuration for account {account}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update configuration: {str(e)}")
+
+@app.post("/account_config/{account}/add")
+async def add_config_entry(account: str, entry: ConfigEntry):
+    """
+    Add or update a single configuration entry.
+    For example: add a new configuration value like watch-video-time.
+    """
+    try:
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "accounts")
+        account_dir = os.path.join(accounts_dir, account)
+        config_path = os.path.join(account_dir, "config.yml")
+
+        if not os.path.exists(account_dir):
+            raise HTTPException(status_code=404, detail=f"Account {account} not found")
+
+        # Read file while preserving format
+        try:
+            lines = read_file_lines(config_path)
+            current_config = yaml.safe_load(''.join(lines)) or {}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Configuration file not found")
+
+        # Convert key to use hyphens
+        key = entry.key.replace('_', '-')
+
+        # Update the lines while preserving format
+        new_lines = update_yaml_value_in_lines(lines, key, entry.value)
+
+        # Validate the complete configuration
+        try:
+            new_config = yaml.safe_load(''.join(new_lines))
+            config_dict = {k.replace('-', '_'): v for k, v in new_config.items()}
+            config_dict.pop('username', None)
+            AccountConfig(username=account, **config_dict)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid configuration: {str(e)}")
+
+        # Write back the updated lines
+        write_file_lines(config_path, new_lines)
+
+        logger.info(f"Added configuration entry {key} for account {account}")
+        return {"status": "success", "message": f"Added configuration entry {key}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding configuration entry for account {account}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add configuration entry: {str(e)}")
+
+@app.post("/account_config/{account}/array/add")
+async def add_array_item(account: str, entry: ArrayConfigEntry):
+    """
+    Add an item to an array configuration entry.
+    For example: add a new username to blogger-followers.
+    """
+    try:
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "accounts")
+        account_dir = os.path.join(accounts_dir, account)
+        config_path = os.path.join(account_dir, "config.yml")
+
+        if not os.path.exists(account_dir):
+            raise HTTPException(status_code=404, detail=f"Account {account} not found")
+
+        # Read file while preserving format
+        try:
+            lines = read_file_lines(config_path)
+            current_config = yaml.safe_load(''.join(lines)) or {}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Configuration file not found")
+
+        # Convert key to use hyphens
+        key = entry.key.replace('_', '-')
+
+        # Get current array value
+        current_value = current_config.get(key, [])
+        if isinstance(current_value, str):
+            try:
+                import ast
+                current_value = ast.literal_eval(current_value)
+            except:
+                current_value = []
+        if not isinstance(current_value, list):
+            current_value = []
+
+        # Add new item if not present
+        if entry.item not in current_value:
+            current_value.append(entry.item)
+
+        # Update the lines while preserving format
+        new_lines = update_yaml_value_in_lines(lines, key, current_value)
+
+        # Validate the complete configuration
+        try:
+            new_config = yaml.safe_load(''.join(new_lines))
+            config_dict = {k.replace('-', '_'): v for k, v in new_config.items()}
+            config_dict.pop('username', None)
+            AccountConfig(username=account, **config_dict)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid configuration: {str(e)}")
+
+        # Write back the updated lines
+        write_file_lines(config_path, new_lines)
+
+        logger.info(f"Added item to array {key} for account {account}")
+        return {"status": "success", "message": f"Added item to array {key}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding array item for account {account}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add array item: {str(e)}")
+
+@app.delete("/account_config/{account}/add")
+async def remove_config_entry(account: str, key: str):
+    """
+    Remove a single configuration entry.
+    For example: remove a configuration value completely.
+    """
+    try:
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "accounts")
+        account_dir = os.path.join(accounts_dir, account)
+        config_path = os.path.join(account_dir, "config.yml")
+
+        if not os.path.exists(account_dir):
+            raise HTTPException(status_code=404, detail=f"Account {account} not found")
+
+        # Read existing config
+        try:
+            with open(config_path, 'r') as f:
+                current_config = yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Configuration file not found")
+
+        # Convert key to use hyphens
+        key = key.replace('_', '-')
+
+        # Remove entry if it exists
+        if key not in current_config:
+            raise HTTPException(status_code=404, detail=f"Configuration entry {key} not found")
+
+        current_config.pop(key)
+
+        # Validate config
+        try:
+            config_dict = {k.replace('-', '_'): v for k, v in current_config.items()}
+            config_dict.pop('username', None)
+            AccountConfig(username=account, **config_dict)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid configuration: {str(e)}")
+
+        # Save updated config
+        with open(config_path, 'w') as f:
+            yaml.safe_dump(current_config, f, default_flow_style=False)
+
+        logger.info(f"Removed configuration entry {key} for account {account}")
+        return {"status": "success", "message": f"Removed configuration entry {key}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing configuration entry for account {account}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove configuration entry: {str(e)}")
+
+@app.post("/account_config/{account}/array/add")
+async def add_array_item(account: str, entry: ArrayConfigEntry):
+    """
+    Add an item to an array configuration entry.
+    For example: add a new username to blogger-followers.
+    """
+    try:
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "accounts")
+        account_dir = os.path.join(accounts_dir, account)
+        config_path = os.path.join(account_dir, "config.yml")
+
+        if not os.path.exists(account_dir):
+            raise HTTPException(status_code=404, detail=f"Account {account} not found")
+
+        # Read file while preserving format
+        try:
+            lines = read_file_lines(config_path)
+            current_config = yaml.safe_load(''.join(lines)) or {}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Configuration file not found")
+
+        # Convert key to use hyphens
+        key = entry.key.replace('_', '-')
+
+        # Get current array value
+        current_value = current_config.get(key, [])
+        if isinstance(current_value, str):
+            try:
+                import ast
+                current_value = ast.literal_eval(current_value)
+            except:
+                current_value = []
+        if not isinstance(current_value, list):
+            current_value = []
+
+        # Add new item if not present
+        if entry.item not in current_value:
+            current_value.append(entry.item)
+
+        # Update the lines while preserving format
+        new_lines = update_yaml_value_in_lines(lines, key, current_value)
+
+        # Validate the complete configuration
+        try:
+            new_config = yaml.safe_load(''.join(new_lines))
+            config_dict = {k.replace('-', '_'): v for k, v in new_config.items()}
+            config_dict.pop('username', None)
+            AccountConfig(username=account, **config_dict)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid configuration: {str(e)}")
+
+        # Write back the updated lines
+        write_file_lines(config_path, new_lines)
+
+        logger.info(f"Added item to array {key} for account {account}")
+        return {"status": "success", "message": f"Added item to array {key}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding array item for account {account}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add array item: {str(e)}")
+
+@app.delete("/account_config/{account}/array/{key}/remove")
+async def remove_array_item(account: str, key: str, entry: ArrayConfigEntry):
+    """
+    Remove an item from an array configuration entry.
+    For example: remove a username from blogger-followers.
+    """
+    try:
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "accounts")
+        account_dir = os.path.join(accounts_dir, account)
+        config_path = os.path.join(account_dir, "config.yml")
+
+        if not os.path.exists(account_dir):
+            raise HTTPException(status_code=404, detail=f"Account {account} not found")
+
+        # Read file while preserving format
+        try:
+            lines = read_file_lines(config_path)
+            current_config = yaml.safe_load(''.join(lines)) or {}
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Configuration file not found")
+
+        # Convert key to use hyphens
+        key = key.replace('_', '-')
+
+        # Get current array value
+        current_value = current_config.get(key, [])
+        if isinstance(current_value, str):
+            try:
+                import ast
+                current_value = ast.literal_eval(current_value)
+            except:
+                current_value = []
+        if not isinstance(current_value, list):
+            current_value = []
+
+        # Remove item if it exists
+        if entry.item not in current_value:
+            raise HTTPException(status_code=404, detail=f"Item not found in array {key}")
+            
+        current_value.remove(entry.item)
+
+        # Update the lines while preserving format
+        new_lines = update_yaml_value_in_lines(lines, key, current_value)
+
+        # Validate the complete configuration
+        try:
+            new_config = yaml.safe_load(''.join(new_lines))
+            config_dict = {k.replace('-', '_'): v for k, v in new_config.items()}
+            config_dict.pop('username', None)
+            AccountConfig(username=account, **config_dict)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid configuration: {str(e)}")
+
+        # Write back the updated lines
+        write_file_lines(config_path, new_lines)
+
+        logger.info(f"Removed item from array {key} for account {account}")
+        return {"status": "success", "message": f"Removed item from array {key}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing array item for account {account}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove array item: {str(e)}")
+
+def read_file_lines(file_path: str) -> list[str]:
+    """Read file and return lines while preserving format"""
+    with open(file_path, 'r') as f:
+        return f.readlines()
+
+def write_file_lines(file_path: str, lines: list[str]):
+    """Write lines back to file"""
+    with open(file_path, 'w') as f:
+        f.writelines(lines)
+
+def update_yaml_value_in_lines(lines: list[str], key: str, value: Any) -> list[str]:
+    """Update a specific key's value in the YAML lines while preserving format"""
+    new_lines = []
+    key_found = False
+    
+    for line in lines:
+        if line.strip().startswith(f"{key}:"):
+            # Preserve any inline comments
+            comment = ""
+            if "#" in line:
+                comment = " " + line.split("#", 1)[1].rstrip()
+            
+            # Format the value appropriately
+            if isinstance(value, list):
+                formatted_value = str(value).replace("'", '"')
+            else:
+                formatted_value = str(value)
+            
+            new_lines.append(f"{key}: {formatted_value}{comment}\n")
+            key_found = True
+        else:
+            new_lines.append(line)
+    
+    if not key_found:
+        # Add new key at the end of the appropriate section
+        new_lines.append(f"{key}: {value}\n")
+    
+    return new_lines

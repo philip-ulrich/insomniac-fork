@@ -3470,5 +3470,21 @@
         "fullname": "\ud835\udce3\ud835\udcf8\ud835\udcf6\ud835\udcea\ud835\udcfc \ud835\udcd5\ud835\udcee\ud835\udcfb\ud835\udcf7\ud835\udcea\ud835\udcf7\ud835\udced\ud835\udcee\ud835\udd03 \ud835\udcdb\ud835\udcf8\ud835\udcf9\ud835\udcee\ud835\udd03 \ud83e\udd40",
         "potency_ratio": 0.8857837181044957,
         "skip_reason": null
+    },
+    "bhuvan_vishkarma": {
+        "datetime": "2024-11-30 17:32:02.248261",
+        "followers": 0,
+        "followings": 6691,
+        "mutual_friends": 0,
+        "follow_button_text": "FOLLOW",
+        "is_restricted": false,
+        "is_private": true,
+        "has_business_category": false,
+        "posts_count": 0,
+        "biography": "",
+        "link_in_bio": null,
+        "fullname": "Bhuvan vishkarma \ud83d\udda4",
+        "potency_ratio": 0.0,
+        "skip_reason": "LT_FOLLOWERS"
     }
 }

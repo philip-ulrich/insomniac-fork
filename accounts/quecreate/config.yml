@@ -15,7 +15,7 @@ use-cloned-app: false
 allow-untested-ig-version: false # Using an untested version of IG would cause unexpected behavior because some elements in the user interface may have been changed
 screen-sleep: true
 screen-record: false
-speed-multiplier: 1.0
+speed-multiplier: 2.0
 debug: true
 close-apps: false
 kill-atx-agent: false
@@ -36,7 +36,7 @@ truncate-sources: 2-5
 ##############################################################################
 
 ## Interaction (active jobs)
-blogger-followers: ["mnaumanndesign"]
+blogger-followers: ["ledianaprengaa"]
 # feed: 2-5 # is the number of likes you will give in feed
 
 ## Special modifier for jobs and sources
@@ -125,3 +125,7 @@ end-if-pm-limit-reached: false
 # time-delta: 10-15
 # repeat: 280-320
 # total-sessions: 1 # -1 or commented for infinite sessions
+working-hours: ["17.00-23.00"]
+time-delta: 0
+repeat: 280-320
+total-sessions: -1

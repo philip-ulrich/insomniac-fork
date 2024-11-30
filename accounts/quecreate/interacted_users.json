@@ -6438,5 +6438,19 @@
         "unfollowed": false,
         "scraped": false,
         "pm_sent": false
+    },
+    "bhuvan_vishkarma": {
+        "last_interaction": "2024-11-30 17:32:04.096317",
+        "following_status": "none",
+        "session_id": "959fef80-1bda-40d2-8fef-c185206ce7dc",
+        "job_name": "blogger-followers",
+        "target": "ledianaprengaa",
+        "liked": 0,
+        "watched": 0,
+        "commented": 0,
+        "followed": false,
+        "unfollowed": false,
+        "scraped": false,
+        "pm_sent": false
     }
 }
