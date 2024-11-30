@@ -7,6 +7,7 @@ from enum import Enum, unique
 from typing import Optional, Union
 
 from atomicwrites import atomic_write
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,11 @@ class Storage:
         self.interacted_users = {}
         self.history_filter_users = {}
 
+        # Initialize NocoDB storage if config exists
+        self.nocodb = None
+        nocodb_config = os.path.join(self.account_path, "nocodb.yml")
+        if os.path.exists(nocodb_config):
+            logger.info("NocoDB config found - plugin will handle initialization")
         self.interacted_users_path = os.path.join(
             self.account_path, FILENAME_INTERACTED_USERS
         )

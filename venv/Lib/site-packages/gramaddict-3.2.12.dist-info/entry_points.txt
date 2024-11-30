@@ -1,0 +1,3 @@
+[console_scripts]
+gramaddict=GramAddict.__main__:main
+

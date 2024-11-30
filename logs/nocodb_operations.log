@@ -1,0 +1,35 @@
+2024-11-30 17:37:03,174 - nocodb_operations - DEBUG - NocoDB logger initialized
+2024-11-30 17:37:24,861 - nocodb_operations - INFO - Initializing NocoDB storage...
+2024-11-30 17:37:24,861 - nocodb_operations - INFO - Loading NocoDB configuration...
+2024-11-30 17:37:24,861 - nocodb_operations - DEBUG - Looking for config at: E:\PROJECTS\instagram automation\virtualinfluencer\accounts\quecreate\nocodb.yml
+2024-11-30 17:37:24,870 - nocodb_operations - INFO - Testing NocoDB connection...
+2024-11-30 17:37:24,871 - nocodb_operations - DEBUG - NocoDB: Making GET request to http://192.168.50.114:8080/api/v1/health
+2024-11-30 17:37:24,891 - nocodb_operations - INFO - Verifying project pvazjom12m1ho5k...
+2024-11-30 17:37:24,891 - nocodb_operations - DEBUG - NocoDB: Making GET request to http://192.168.50.114:8080/api/v1/db/meta/projects/pvazjom12m1ho5k
+2024-11-30 17:37:24,906 - nocodb_operations - INFO - NocoDB connection successful!
+2024-11-30 17:37:24,906 - nocodb_operations - INFO - Initializing tables...
+2024-11-30 17:37:24,907 - nocodb_operations - INFO - NocoDB: Initializing tables...
+2024-11-30 17:37:24,907 - nocodb_operations - DEBUG - NocoDB: Checking project pvazjom12m1ho5k
+2024-11-30 17:37:24,907 - nocodb_operations - DEBUG - NocoDB: Making GET request to http://192.168.50.114:8080/api/v1/db/meta/projects/pvazjom12m1ho5k
+2024-11-30 17:37:24,937 - nocodb_operations - INFO - NocoDB: Project pvazjom12m1ho5k exists
+2024-11-30 17:37:24,937 - nocodb_operations - DEBUG - NocoDB: Getting existing tables
+2024-11-30 17:37:24,937 - nocodb_operations - DEBUG - NocoDB: Making GET request to http://192.168.50.114:8080/api/v1/db/meta/projects/pvazjom12m1ho5k/tables
+2024-11-30 17:37:24,951 - nocodb_operations - DEBUG - NocoDB: Found existing tables: ['interacted users', 'history filters users']
+2024-11-30 17:37:24,952 - nocodb_operations - DEBUG - NocoDB: Checking table Interacted Users
+2024-11-30 17:37:24,952 - nocodb_operations - INFO - NocoDB: Table Interacted Users already exists
+2024-11-30 17:37:24,952 - nocodb_operations - DEBUG - NocoDB: Checking table History Filters Users
+2024-11-30 17:37:24,952 - nocodb_operations - INFO - NocoDB: Table History Filters Users already exists
+2024-11-30 17:37:24,953 - nocodb_operations - INFO - NocoDB: Tables initialized successfully
+2024-11-30 17:37:24,954 - nocodb_operations - INFO - NocoDB storage initialized successfully!
+2024-11-30 17:37:25,691 - nocodb_operations - INFO - NocoDB: Initializing tables...
+2024-11-30 17:37:25,693 - nocodb_operations - DEBUG - NocoDB: Checking project pvazjom12m1ho5k
+2024-11-30 17:37:25,693 - nocodb_operations - DEBUG - NocoDB: Making GET request to http://192.168.50.114:8080/api/v1/db/meta/projects/pvazjom12m1ho5k
+2024-11-30 17:37:25,716 - nocodb_operations - INFO - NocoDB: Project pvazjom12m1ho5k exists
+2024-11-30 17:37:25,717 - nocodb_operations - DEBUG - NocoDB: Getting existing tables
+2024-11-30 17:37:25,717 - nocodb_operations - DEBUG - NocoDB: Making GET request to http://192.168.50.114:8080/api/v1/db/meta/projects/pvazjom12m1ho5k/tables
+2024-11-30 17:37:25,745 - nocodb_operations - DEBUG - NocoDB: Found existing tables: ['interacted users', 'history filters users']
+2024-11-30 17:37:25,745 - nocodb_operations - DEBUG - NocoDB: Checking table Interacted Users
+2024-11-30 17:37:25,745 - nocodb_operations - INFO - NocoDB: Table Interacted Users already exists
+2024-11-30 17:37:25,747 - nocodb_operations - DEBUG - NocoDB: Checking table History Filters Users
+2024-11-30 17:37:25,747 - nocodb_operations - INFO - NocoDB: Table History Filters Users already exists
+2024-11-30 17:37:25,747 - nocodb_operations - INFO - NocoDB: Tables initialized successfully

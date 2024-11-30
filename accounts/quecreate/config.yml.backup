@@ -1,0 +1,138 @@
+##############################################################################
+# For more information on parameters, refer to: 
+# https://docs.gramaddict.org/#/configuration?id=configuration-file
+#
+# Note: be sure to comment out any parameters not used by adding a # in front
+# AGAIN: YOU DON'T HAVE TO DELETE THE LINE, BUT ONLY COMMENT IT WITH A #!
+##############################################################################
+# General Configuration
+##############################################################################
+
+username: quecreate # you have to put your IG name here!
+# device: put_your_device_id_there # 'adb devices' in the console to know it.  It's needed only if you have more than 1 device connected
+app-id: com.instagram.android
+use-cloned-app: false
+allow-untested-ig-version: false # Using an untested version of IG would cause unexpected behavior because some elements in the user interface may have been changed
+screen-sleep: true
+screen-record: false
+speed-multiplier: 1
+debug: false
+close-apps: false
+kill-atx-agent: false
+restart-atx-agent: false
+disable-block-detection: false
+disable-filters: false
+dont-type: false
+# scrape-to-file: scraped.txt
+total-crashes-limit: 5
+count-app-crashes: false
+shuffle-jobs: true
+truncate-sources: 2-5
+
+##############################################################################
+# Actions
+##############################################################################
+
+## Interaction (active jobs)
+blogger-followers: [ "laundry_studios", "tinjutkin", "peter_tarka", "perry__cooper", "antonin.work", "mauro_cosenza" ]
+blogger-following: [ username1, username2 ]
+blogger-post-likers: [ username1, username2 ]
+blogger: [ username1, username2 ]
+hashtag-likers-top: [ hashtag1, hashtag2 ]
+hashtag-likers-recent: [ hashtag1, hashtag2 ]
+hashtag-posts-top: [ hashtag1, hashtag2 ]
+hashtag-posts-recent: [ "motiongraphics", "c4d", "3dart", "motiondesign", "animation", "cgi", "3danimation", "mograph", "octane", "redshift", "sidefx", "houdini", "proceduralart" ]
+place-posts-top: [ place1, place2 ]
+place-posts-recent: [ place1, place2 ]
+place-likers-top: [ place1, place2 ]
+place-likers-recent: [ place1, place2 ]
+interact-from-file: [usernames1.txt 10-15, usernames2.txt 3]
+posts-from-file: posts.txt
+feed: 2-5 # is the number of likes you will give in feed
+
+## Special modifier for jobs and sources
+watch-video-time: 15-35
+watch-photo-time: 3-4
+# can-reinteract-after: 48 # the amount of hours that have to pass from the last interaction
+delete-interacted-users: true
+
+## Unfollow (unfollow jobs)
+unfollow: 10-20
+unfollow-any: 10-20
+unfollow-non-followers: 10-20
+unfollow-any-non-followers: 10-20
+unfollow-any-followers: 10-20
+unfollow-from-file: [usernames1.txt 7-15, usernames2.txt 6]
+
+## Special modifier for unfollow jobs
+sort-followers-newest-to-oldest: false
+unfollow-delay: 15
+
+## Remove followers (active jobs)
+remove-followers-from-file: [remove1.txt 5-10, remove2.txt 6]
+
+## Special modifier for remove followers
+delete-removed-followers: true
+
+## Post Processing
+# analytics: false # no more supported
+telegram-reports: false # for using telegram-reports you have also to configure telegram.yml in your account folder
+
+## Special actions
+# pre-script: pre_script_path_here
+# post-script: post_script_path_here
+
+##############################################################################
+# Source Limits
+##############################################################################
+
+interactions-count: 30-40
+likes-count: 1-2
+likes-percentage: 100
+stories-count: 1-2
+stories-percentage: 30-40
+carousel-count: 2-3
+carousel-percentage: 60-70
+max-comments-pro-user: 1-2
+# comment-percentage: 30-40
+# pm-percentage: 30-40
+interact-percentage: 30-40
+follow-percentage: 30-40
+follow-limit: 50
+skipped-list-limit: 10-15
+skipped-posts-limit: 5
+fling-when-skipped: 0
+min-following: 100
+
+##############################################################################
+# Total Limits Per Session
+##############################################################################
+
+total-likes-limit: 120-150
+total-follows-limit: 40-50
+total-unfollows-limit: 40-50
+total-watches-limit: 120-150
+total-successful-interactions-limit: 120-150
+total-interactions-limit: 280-300
+total-comments-limit: 3-5
+total-pm-limit: 3-5
+total-scraped-limit: 100-150
+
+##############################################################################
+# Ending Session Conditions
+##############################################################################
+
+end-if-likes-limit-reached: true
+end-if-follows-limit-reached: false
+end-if-watches-limit-reached: false
+end-if-comments-limit-reached: false
+end-if-pm-limit-reached: false
+
+##############################################################################
+# Scheduling
+##############################################################################
+
+# working-hours: [10.15-16.40, 18.15-22.46]
+# time-delta: 10-15
+# repeat: 280-320
+# total-sessions: 1 # -1 or commented for infinite sessions
