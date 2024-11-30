@@ -124,6 +124,49 @@ VirtualInfluencer is an Instagram automation bot that provides a REST API interf
     }
     ```
 
+## Progress Update (2024-01-09)
+
+### Completed Tasks
+1. Implemented accounts endpoint (/accounts)
+   - Lists all configured Instagram accounts
+   - Returns comprehensive account information:
+     * Username and profile stats (posts, followers, following)
+     * Last session timestamp
+     * Active status
+     * Config file status
+   - Handles missing or invalid session files gracefully
+   - Provides real-time active status tracking
+
+2. Implemented interaction limits endpoint (/interaction_limits)
+   - Retrieves account-specific interaction limits from sessions.json
+   - Handles limit ranges (e.g., "120-150" -> 150)
+   - Returns comprehensive limits for:
+     * Likes, follows, unfollows
+     * Comments and private messages
+     * Watch actions
+     * Success and total interaction limits
+     * Scraped user limits
+     * Crash limits
+   - Fixed bug in limit parsing from session args
+
+### Current Status
+- API endpoints for bot management are operational
+- Bot statistics tracking is implemented
+- Account management and monitoring in place
+- Interaction limits can be retrieved and monitored
+- Error handling and validation in place
+
+### Next Steps
+1. Implement rate limiting for API endpoints
+2. Add comprehensive logging for all endpoints
+3. Create unit tests for:
+   - Bot statistics endpoint
+   - Interaction limits endpoint
+   - Accounts endpoint
+   - Session management functions
+4. Enhance error handling with more descriptive messages
+5. Add documentation for all API endpoints
+
 ## Progress Update (November 30, 2024)
 
 ### Completed Tasks
@@ -159,37 +202,6 @@ VirtualInfluencer is an Instagram automation bot that provides a REST API interf
 
 ### Known Issues
 - None currently identified - all major blockers resolved
-
-## Progress Update (2024-01-09)
-
-### Completed Tasks
-1. Implemented interaction limits endpoint (/interaction_limits)
-   - Retrieves account-specific interaction limits from sessions.json
-   - Handles limit ranges (e.g., "120-150" -> 150)
-   - Returns comprehensive limits for:
-     * Likes, follows, unfollows
-     * Comments and private messages
-     * Watch actions
-     * Success and total interaction limits
-     * Scraped user limits
-     * Crash limits
-   - Fixed bug in limit parsing from session args
-
-### Current Status
-- API endpoints for bot management are operational
-- Bot statistics tracking is implemented
-- Interaction limits can be retrieved and monitored
-- Error handling and validation in place
-
-### Next Steps
-1. Implement rate limiting for API endpoints
-2. Add comprehensive logging for all endpoints
-3. Create unit tests for:
-   - Bot statistics endpoint
-   - Interaction limits endpoint
-   - Session management functions
-4. Enhance error handling with more descriptive messages
-5. Add documentation for all API endpoints
 
 ## Recent Updates (2024-11-30)
 

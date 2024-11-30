@@ -25492,3 +25492,9 @@ ValueError: I/O operation on closed file.
 2024-11-30 16:17:31,769 - api.main - ERROR - Error getting interaction limits for account quecreate: 'list' object has no attribute 'get'
 2024-11-30 16:18:20,395 - api.main - INFO - All tasks cleaned up.
 2024-11-30 16:18:20,456 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:18:21,221 - api.main - INFO - API startup complete
+2024-11-30 16:18:21,276 - api.main - INFO - API startup complete
+2024-11-30 16:18:31,268 - api.main - INFO - API startup complete
+2024-11-30 16:26:40,765 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:26:40,795 - api.main - INFO - All tasks cleaned up.
+2024-11-30 16:26:40,856 - api.main - INFO - All tasks cleaned up.

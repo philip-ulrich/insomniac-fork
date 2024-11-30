@@ -115,6 +115,16 @@ class InteractionLimits(BaseModel):
     crashes_limit: int
     time_delta_session: int
 
+class AccountInfo(BaseModel):
+    """Model for account information"""
+    username: str
+    total_posts: int = 0
+    total_followers: int = 0
+    total_following: int = 0
+    last_session_time: Optional[datetime] = None
+    is_active: bool = False
+    config_exists: bool = True
+
 async def check_session_timeout():
     """Background task to check for session timeouts"""
     while True:
@@ -528,6 +538,67 @@ async def get_bot_stats(account: str) -> BotStats:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get bot statistics: {str(e)}"
+        )
+
+@app.get("/accounts")
+async def get_accounts() -> list[AccountInfo]:
+    """
+    Get list of all configured accounts and their basic information.
+    Returns account usernames, profile stats, and session status.
+    """
+    try:
+        accounts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'accounts')
+        accounts = []
+        
+        # List all account directories
+        for account_name in os.listdir(accounts_dir):
+            account_dir = os.path.join(accounts_dir, account_name)
+            if not os.path.isdir(account_dir):
+                continue
+                
+            # Get session data if available
+            session_file = os.path.join(account_dir, 'sessions.json')
+            profile_stats = {"posts": 0, "followers": 0, "following": 0}
+            last_session_time = None
+            
+            if os.path.exists(session_file):
+                try:
+                    with open(session_file, 'r') as f:
+                        sessions = json.loads(f.read())
+                        if sessions:
+                            # Get latest session
+                            latest_session = sessions[-1]
+                            # Get profile stats from latest session
+                            profile_stats = latest_session.get('profile', profile_stats)
+                            # Get session start time
+                            start_time_str = latest_session.get('start_time')
+                            if start_time_str:
+                                last_session_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S.%f")
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error(f"Error parsing session file for account {account_name}: {str(e)}")
+            
+            # Check if config exists
+            config_exists = os.path.exists(os.path.join(account_dir, 'config.yml'))
+            
+            # Create account info
+            account_info = AccountInfo(
+                username=account_name,
+                total_posts=profile_stats.get('posts', 0),
+                total_followers=profile_stats.get('followers', 0),
+                total_following=profile_stats.get('following', 0),
+                last_session_time=last_session_time,
+                is_active=account_name in active_sessions,
+                config_exists=config_exists
+            )
+            accounts.append(account_info)
+        
+        return accounts
+        
+    except Exception as e:
+        logger.error(f"Error getting accounts list: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get accounts list: {str(e)}"
         )
 
 @app.get("/interaction_limits")
